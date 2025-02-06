@@ -2,6 +2,8 @@
 
 A lightweight web-based document search tool that allows users to search through multiple document types (PDF, DOCX, TXT) simultaneously.
 
+[Try Here](https://multi-doc-search.vercel.app/)
+
 ## Features
 
 - **Multi-Document Support**: Search across multiple documents at once

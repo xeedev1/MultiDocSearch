@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Search</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --background-color: #f5f5f5;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .main-content {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .file-list {
+            margin-bottom: 20px;
+        }
+
+        .file-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+
+        .file-item:hover {
+            background: #f5f5f5;
+        }
+
+        .file-item.active {
+            background: #e3f2fd;
+        }
+
+        .document-viewer {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .highlight {
+            background-color: yellow;
+            padding: 2px;
+            border-radius: 2px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .results-count {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Documents</h3>
+            <input type="file" id="fileInput" multiple accept=".txt,.docx,.pdf">
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-container">
+                <input type="text" id="searchTerm" placeholder="Search in documents...">
+                <button onclick="searchDocuments()">Search</button>
+            </div>
+            <div class="loading" id="loading">Processing...</div>
+            <div class="results-count" id="resultsCount"></div>
+            <div class="document-viewer" id="documentViewer"></div>
+        </div>
+    </div>
+
+    <script>
+        let filesData = {};
+        let currentDocument = null;
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('searchTerm').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchDocuments();
+        });
+
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            setLoading(true);
+            try {
+                for (const file of files) {
+                    const content = await readFile(file);
+                    filesData[file.name] = content;
+                }
+                updateFileList();
+                setLoading(false);
+            } catch (error) {
+                console.error('Error reading files:', error);
+                setLoading(false);
+            }
+        }
+
+        async function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                if (file.name.endsWith('.pdf')) {
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = async (e) => {
+                        try {
+                            const pdfData = new Uint8Array(e.target.result);
+                            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                            let fullText = '';
+                            
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const textContent = await page.getTextContent();
+                                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                            }
+                            resolve(fullText);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                } else if (file.name.endsWith('.docx')) {
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = async (e) => {
+                        try {
+                            const result = await mammoth.extractRawText({
+                                arrayBuffer: e.target.result
+                            });
+                            resolve(result.value);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                } else {
+                    // For txt files
+                    reader.readAsText(file);
+                    reader.onload = (e) => resolve(e.target.result);
+                }
+                
+                reader.onerror = () => reject(reader.error);
+            });
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = Object.keys(filesData).map(fileName => `
+                <div class="file-item ${currentDocument === fileName ? 'active' : ''}" 
+                     onclick="viewDocument('${fileName}')">
+                    ${fileName}
+                </div>
+            `).join('');
+        }
+
+        function viewDocument(fileName) {
+            currentDocument = fileName;
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            
+            if (searchTerm) {
+                // If there's a search term, show highlighted content
+                document.getElementById('documentViewer').innerHTML = 
+                    highlightMatches(filesData[fileName], searchTerm);
+            } else {
+                // Otherwise show normal content
+                document.getElementById('documentViewer').innerHTML = filesData[fileName];
+            }
+            
+            updateFileList();
+        }
+
+        function searchDocuments() {
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+
+            setLoading(true);
+            const documentViewer = document.getElementById('documentViewer');
+            const resultsCount = document.getElementById('resultsCount');
+            let totalMatches = 0;
+            let searchResults = [];
+
+            documentViewer.innerHTML = '';
+            resultsCount.innerHTML = '';
+
+            // Search through all documents
+            Object.entries(filesData).forEach(([fileName, content]) => {
+                const matches = findMatches(content, searchTerm);
+                if (matches.length > 0) {
+                    totalMatches += matches.length;
+                    searchResults.push({ fileName, matches });
+                }
+            });
+
+            // Display results
+            if (searchResults.length > 0) {
+                // Show first document with matches
+                const firstResult = searchResults[0];
+                currentDocument = firstResult.fileName;
+                
+                // Highlight and display content
+                const highlightedContent = highlightMatches(filesData[currentDocument], searchTerm);
+                documentViewer.innerHTML = highlightedContent;
+                
+                // Update UI
+                updateFileList();
+                resultsCount.textContent = `Found ${totalMatches} matches in ${searchResults.length} documents`;
+
+                // Scroll to first match
+                const firstMatch = document.querySelector('.highlight');
+                if (firstMatch) {
+                    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                resultsCount.textContent = 'No matches found';
+                documentViewer.innerHTML = 'No matches found in any document';
+            }
+
+            setLoading(false);
+        }
+
+        function findMatches(content, searchTerm) {
+            const regex = new RegExp(searchTerm, 'gi');
+            return Array.from(content.matchAll(regex));
+        }
+
+        function highlightMatches(content, searchTerm) {
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            return content.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function setLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
+

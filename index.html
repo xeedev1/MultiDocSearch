@@ -3,21 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Search</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>MultiDocSearch - Advanced Document Search Tool</title>
+    <meta name="title" content="MultiDocSearch - Advanced Document Search Tool">
+    <meta name="description" content="A powerful tool for searching across multiple documents simultaneously. Supports PDF, DOCX, and TXT files with real-time search capabilities.">
+    <meta name="author" content="Sudais">
+    <meta name="keywords" content="document search, pdf search, docx search, text search, multiple document search">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MultiDocSearch - Advanced Document Search Tool">
+    <meta property="og:description" content="A powerful tool for searching across multiple documents simultaneously. Supports PDF, DOCX, and TXT files with real-time search capabilities.">
+    <meta property="og:author" content="Sudais">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="MultiDocSearch - Advanced Document Search Tool">
+    <meta property="twitter:description" content="A powerful tool for searching across multiple documents simultaneously. Supports PDF, DOCX, and TXT files with real-time search capabilities.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
     <div class="container">
+
         <div class="sidebar">
-            <h3>📄 Documents</h3>
+            <h3>
+                <i class="fas fa-search"></i> 
+                MultiDocSearch
+            </h3>
             <div class="upload-container">
-                <label for="fileInput" class="upload-label">
-                    <span class="upload-icon">📎</span>
+                <label for="fileInput" class="upload-label" id="uploadLabel">
+                    <i class="fas fa-file-upload"></i>
                     Upload Files
                 </label>
+                <label for="additionalFiles" class="upload-label" id="addMoreLabel" style="display: none;">
+                    <i class="fas fa-plus"></i>
+                    Add More
+                </label>
+                <button class="clear-button" id="clearFiles" style="display: none;">
+                    <i class="fas fa-trash"></i>
+                    Clear All
+                </button>
                 <input type="file" id="fileInput" multiple accept=".txt,.docx,.pdf">
+                <input type="file" id="additionalFiles" multiple accept=".txt,.docx,.pdf" style="display: none;">
             </div>
             <div class="file-list" id="fileList"></div>
         </div>
@@ -27,16 +62,33 @@
                 <div class="search-wrapper">
                     <input type="text" id="searchTerm" placeholder="Search in documents...">
                     <button onclick="searchDocuments()">
-                        <span class="search-icon">🔍</span>
+                        <i class="fas fa-search"></i>
+                        Search
                     </button>
                 </div>
             </div>
-            <div class="loading" id="loading">Processing...</div>
+            <div class="loading" id="loading" style="display: none;">Processing...</div>
             <div class="results-container">
-                <div class="results-count" id="resultsCount"></div>
-                <div class="navigation-buttons">
-                    <button id="prevDoc" onclick="navigateDocuments('prev')" disabled>←</button>
-                    <button id="nextDoc" onclick="navigateDocuments('next')" disabled>→</button>
+                <div class="results-count" id="resultsCount" style="display: none;"></div>
+                <div class="navigation-container" id="navigationContainer" style="display: none;">
+                    <div class="word-navigation">
+                        <button id="prevWord" onclick="navigateWords('prev')" disabled>
+                            <i class="fas fa-arrow-left"></i>
+                            Previous Match
+                        </button>
+                        <button id="nextWord" onclick="navigateWords('next')" disabled>
+                            Next Match
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="navigation-buttons">
+                        <button id="prevDoc" onclick="navigateDocuments('prev')" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="nextDoc" onclick="navigateDocuments('next')" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="document-viewer" id="documentViewer"></div>
@@ -45,16 +97,16 @@
 
     <footer class="footer">
         <div class="footer-content">
-            <p>Document Search Tool</p>
+            <p>MultiDocSearch - Advanced Document Search Tool</p>
             <div class="social-links">
                 <a href="https://www.linkedin.com/in/sudais221/" target="_blank" class="linkedin-link">
                     <svg class="linkedin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                     </svg>
-                    Connect with me on LinkedIn
+                    Connect with Sudais on LinkedIn
                 </a>
             </div>
-            <p class="copyright">© 2024 Created by Sudais</p>
+            <p class="copyright">© 2024 MultiDocSearch by Sudais. All rights reserved.</p>
         </div>
     </footer>
 

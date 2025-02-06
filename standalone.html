@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>MultiDocSearch - Advanced Document Search Tool</title>
+    <meta name="title" content="MultiDocSearch - Advanced Document Search Tool">
+    <meta name="description" content="A powerful tool for searching across multiple documents simultaneously. Supports PDF, DOCX, and TXT files with real-time search capabilities.">
+    <meta name="author" content="Sudais">
+    <meta name="keywords" content="document search, pdf search, docx search, text search, multiple document search">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MultiDocSearch - Advanced Document Search Tool">
+    <meta property="og:description" content="A powerful tool for searching across multiple documents simultaneously. Supports PDF, DOCX, and TXT files with real-time search capabilities.">
+    <meta property="og:author" content="Sudais">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="MultiDocSearch - Advanced Document Search Tool">
+    <meta property="twitter:description" content="A powerful tool for searching across multiple documents simultaneously. Supports PDF, DOCX, and TXT files with real-time search capabilities.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #8A2BE2;
+            --primary-gradient: linear-gradient(135deg, #8A2BE2, #4169E1);
+            --background-color: #0A0A1F;
+            --surface-color: #12122A;
+            --surface-color-light: #1D1D3D;
+            --text-color: #ffffff;
+            --text-secondary: #B8B8E6;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            --subtle-glow: 0 0 10px rgba(138, 43, 226, 0.2);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--background-color), #141428);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+        }
+
+        .sidebar {
+            background: var(--surface-color);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin: 0;
+            padding-bottom: 16px;
+            font-size: 1.8rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .upload-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .upload-label {
+            padding: 14px 16px;
+            background: var(--surface-color-light);
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .upload-label:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .upload-icon {
+            margin-right: 8px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .main-content {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            gap: 10px;
+        }
+
+        .search-container {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--surface-color);
+            padding: 16px 0;
+            margin-bottom: 10px;
+        }
+
+        .search-wrapper {
+            background: var(--surface-color-light);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            transition: border-color 0.2s ease-out;
+            display: flex;
+            gap: 10px;
+            padding: 8px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+        }
+
+        .search-wrapper input {
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-color);
+            flex: 1;
+        }
+
+        .search-wrapper input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-wrapper button {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            transition: all 0.2s ease-out;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        .search-wrapper button:hover:not(:disabled) {
+            background: var(--primary-gradient);
+            box-shadow: var(--subtle-glow);
+        }
+
+        .search-icon {
+            font-size: 18px;
+        }
+
+        .results-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            margin-bottom: 10px;
+        }
+
+        .results-count {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            background: var(--surface-color-light);
+            border-radius: var(--border-radius);
+        }
+
+        .navigation-container {
+            background: var(--surface-color-light);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .word-navigation {
+            display: flex;
+            gap: 12px;
+        }
+
+        .word-navigation button {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            transition: all 0.2s ease-out;
+            width: auto;
+            padding: 0 20px;
+            height: 44px;
+            border-radius: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .word-navigation button:hover:not(:disabled) {
+            background: var(--primary-gradient);
+            box-shadow: var(--subtle-glow);
+        }
+
+        .word-navigation button:disabled {
+            background: var(--surface-color-light);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .navigation-buttons button {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            transition: all 0.2s ease-out;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .navigation-buttons button:hover:not(:disabled) {
+            background: var(--primary-gradient);
+            box-shadow: var(--subtle-glow);
+        }
+
+        .navigation-buttons button:disabled {
+            background: var(--surface-color-light);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .document-viewer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            margin: 0;
+            background: var(--surface-color-light);
+            border-radius: var(--border-radius);
+            line-height: 1.6;
+            font-size: 1.1rem;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .highlight {
+            background: rgba(138, 43, 226, 0.3);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.2s ease-out;
+        }
+
+        .highlight.current {
+            background: var(--primary-color);
+            box-shadow: var(--subtle-glow);
+            font-weight: 600;
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-item {
+            padding: 14px 16px;
+            background: var(--surface-color-light);
+            border-radius: var(--border-radius);
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            will-change: background-color, border-left-color;
+        }
+
+        .file-item i {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            transition: color 0.2s ease;
+        }
+
+        .file-item:hover {
+            background: rgba(138, 43, 226, 0.1);
+            border-left-color: var(--primary-color);
+            padding-left: 20px;
+        }
+
+        .file-item.active {
+            background: rgba(138, 43, 226, 0.15);
+            border-left-color: var(--primary-color);
+        }
+
+        .loading {
+            color: var(--primary-color);
+            background: var(--surface-color);
+            padding: 16px 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding: 30px 0;
+            background: var(--surface-color);
+            border-top: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .social-links {
+            margin: 20px 0;
+        }
+
+        .linkedin-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: var(--primary-gradient);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .linkedin-link:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--subtle-glow);
+        }
+
+        .linkedin-icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .copyright {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+                padding: 10px;
+            }
+
+            .sidebar {
+                height: auto;
+                max-height: 300px;
+            }
+
+            .search-wrapper {
+                flex-direction: column;
+            }
+
+            .document-viewer {
+                max-height: 400px;
+            }
+
+            .navigation-buttons button {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-gradient);
+        }
+
+        /* Glass morphism effect for containers */
+        .main-content, .sidebar {
+            background: var(--surface-color);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        /* Additional gradient effects */
+        .sidebar h3 {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        /* Enhanced animations */
+        .file-item, .upload-label, .search-wrapper button, 
+        .navigation-buttons button, .linkedin-link {
+            transition: all 0.2s ease-out;
+        }
+
+        /* Pulsing animation for active elements */
+        .file-item.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            opacity: 0.2;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Add styles for the new elements */
+        .clear-button {
+            padding: 14px 16px;
+            background: var(--surface-color-light);
+            border: 2px solid #ff4757; /* Red color for clear button */
+            color: #ff4757;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+
+        .clear-button:hover {
+            background: #ff4757;
+            color: white;
+        }
+
+        #addMoreLabel {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        #addMoreLabel:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Add styles for the notification dot */
+        .file-item {
+            position: relative;
+        }
+
+        .has-matches {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+        }
+
+        /* Update file item padding to accommodate the dot */
+        .file-item {
+            padding-right: 30px; /* Increased right padding for dot */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>
+                <i class="fas fa-search"></i> 
+                MultiDocSearch
+            </h3>
+            <div class="upload-container">
+                <label for="fileInput" class="upload-label" id="uploadLabel">
+                    <i class="fas fa-file-upload"></i>
+                    Upload Files
+                </label>
+                <label for="additionalFiles" class="upload-label" id="addMoreLabel" style="display: none;">
+                    <i class="fas fa-plus"></i>
+                    Add More
+                </label>
+                <button class="clear-button" id="clearFiles" style="display: none;">
+                    <i class="fas fa-trash"></i>
+                    Clear All
+                </button>
+                <input type="file" id="fileInput" multiple accept=".txt,.docx,.pdf">
+                <input type="file" id="additionalFiles" multiple accept=".txt,.docx,.pdf" style="display: none;">
+            </div>
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <input type="text" id="searchTerm" placeholder="Search in documents...">
+                    <button onclick="searchDocuments()">
+                        <i class="fas fa-search"></i>
+                        Search
+                    </button>
+                </div>
+            </div>
+            <div class="loading" id="loading" style="display: none;">Processing...</div>
+            <div class="results-container">
+                <div class="results-count" id="resultsCount" style="display: none;"></div>
+                <div class="navigation-container" id="navigationContainer" style="display: none;">
+                    <div class="word-navigation">
+                        <button id="prevWord" onclick="navigateWords('prev')" disabled>
+                            <i class="fas fa-arrow-left"></i>
+                            Previous Match
+                        </button>
+                        <button id="nextWord" onclick="navigateWords('next')" disabled>
+                            Next Match
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="navigation-buttons">
+                        <button id="prevDoc" onclick="navigateDocuments('prev')" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="nextDoc" onclick="navigateDocuments('next')" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="document-viewer" id="documentViewer"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>MultiDocSearch - Advanced Document Search Tool</p>
+            <div class="social-links">
+                <a href="https://www.linkedin.com/in/sudais221/" target="_blank" class="linkedin-link">
+                    <svg class="linkedin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    </svg>
+                    Connect with Sudais on LinkedIn
+                </a>
+            </div>
+            <p class="copyright">© 2024 MultiDocSearch by Sudais. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        let filesData = {};
+        let currentDocument = null;
+        let searchResults = [];
+        let currentResultIndex = 0;
+        let currentWordIndex = 0;
+        let currentMatches = [];
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('additionalFiles').addEventListener('change', handleFileUpload);
+        document.getElementById('clearFiles').addEventListener('click', clearFiles);
+        document.getElementById('searchTerm').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchDocuments();
+        });
+
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            setLoading(true);
+            try {
+                // Create a temporary object for new files
+                const newFiles = {};
+                for (const file of files) {
+                    const content = await readFile(file);
+                    newFiles[file.name] = content;
+                }
+                
+                // Merge new files with existing files, putting new ones first
+                filesData = { ...newFiles, ...filesData };
+                
+                updateFileList();
+                setLoading(false);
+                
+                // Show/hide appropriate buttons
+                document.getElementById('uploadLabel').style.display = 'none';
+                document.getElementById('addMoreLabel').style.display = 'flex';
+                document.getElementById('clearFiles').style.display = 'flex';
+                
+                // Clear the input value to allow uploading the same file again
+                event.target.value = '';
+            } catch (error) {
+                console.error('Error reading files:', error);
+                setLoading(false);
+            }
+        }
+
+        async function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                if (file.name.endsWith('.pdf')) {
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = async (e) => {
+                        try {
+                            const pdfData = new Uint8Array(e.target.result);
+                            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                            let fullText = '';
+                            
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const textContent = await page.getTextContent();
+                                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                            }
+                            resolve(fullText);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                } else if (file.name.endsWith('.docx')) {
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = async (e) => {
+                        try {
+                            const result = await mammoth.extractRawText({
+                                arrayBuffer: e.target.result
+                            });
+                            resolve(result.value);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                } else {
+                    // For txt files
+                    reader.readAsText(file);
+                    reader.onload = (e) => resolve(e.target.result);
+                }
+                
+                reader.onerror = () => reject(reader.error);
+            });
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const fileCount = Object.keys(filesData).length;
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            
+            if (fileCount > 0) {
+                fileList.innerHTML = Object.keys(filesData)
+                    .map(fileName => {
+                        // Check if file contains search term
+                        const hasMatches = searchTerm && 
+                            searchResults.some(result => result.fileName === fileName);
+                        
+                        return `
+                            <div class="file-item ${currentDocument === fileName ? 'active' : ''}" 
+                                 onclick="viewDocument('${fileName}')">
+                                <i class="fas fa-file-alt"></i>
+                                ${fileName}
+                                ${hasMatches ? '<span class="has-matches"></span>' : ''}
+                            </div>
+                        `;
+                    }).join('');
+            } else {
+                fileList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>No documents uploaded yet</p>
+                    </div>
+                `;
+            }
+        }
+
+        function viewDocument(fileName) {
+            currentDocument = fileName;
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            
+            if (searchTerm) {
+                document.getElementById('documentViewer').innerHTML = 
+                    highlightMatches(filesData[fileName], searchTerm);
+                
+                setTimeout(() => {
+                    updateCurrentHighlight();
+                }, 100);
+            } else {
+                document.getElementById('documentViewer').innerHTML = filesData[fileName];
+            }
+            
+            updateFileList();
+        }
+
+        function searchDocuments() {
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+
+            setLoading(true);
+            const documentViewer = document.getElementById('documentViewer');
+            const resultsCount = document.getElementById('resultsCount');
+            const navigationContainer = document.getElementById('navigationContainer');
+            
+            let totalMatches = 0;
+            searchResults = [];
+            currentResultIndex = 0;
+            currentWordIndex = 0;
+
+            documentViewer.innerHTML = '';
+            resultsCount.style.display = 'none';
+            navigationContainer.style.display = 'none';
+
+            // Search through all documents
+            Object.entries(filesData).forEach(([fileName, content]) => {
+                const matches = findMatches(content, searchTerm);
+                if (matches.length > 0) {
+                    totalMatches += matches.length;
+                    searchResults.push({ fileName, matches });
+                }
+            });
+
+            // Update file list to show indicators
+            updateFileList();
+
+            // Update navigation buttons
+            updateNavigationButtons();
+
+            // Display results
+            if (searchResults.length > 0) {
+                const firstResult = searchResults[0];
+                currentDocument = firstResult.fileName;
+                
+                documentViewer.innerHTML = highlightMatches(filesData[currentDocument], searchTerm);
+                
+                updateFileList();
+                resultsCount.textContent = `Document ${currentResultIndex + 1} of ${searchResults.length} (${totalMatches} total matches)`;
+                
+                // Show results count and navigation
+                resultsCount.style.display = 'block';
+                navigationContainer.style.display = 'flex';
+
+                const firstMatch = document.querySelector('.highlight');
+                if (firstMatch) {
+                    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
+                const highlights = document.querySelectorAll('.highlight');
+                updateWordNavigation(highlights.length);
+
+                currentWordIndex = 0;
+                setTimeout(() => {
+                    updateCurrentHighlight();
+                }, 100);
+            } else {
+                resultsCount.textContent = 'No matches found';
+                resultsCount.style.display = 'block';
+                documentViewer.innerHTML = 'No matches found in any document';
+                navigationContainer.style.display = 'none';
+            }
+
+            setLoading(false);
+        }
+
+        function findMatches(content, searchTerm) {
+            const regex = new RegExp(searchTerm, 'gi');
+            return Array.from(content.matchAll(regex));
+        }
+
+        function highlightMatches(content, searchTerm) {
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            return content.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function setLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.style.display = 'block';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+
+        function navigateDocuments(direction) {
+            if (searchResults.length === 0) return;
+
+            if (direction === 'next' && currentResultIndex < searchResults.length - 1) {
+                currentResultIndex++;
+            } else if (direction === 'prev' && currentResultIndex > 0) {
+                currentResultIndex--;
+            }
+
+            // Update current document and display
+            const result = searchResults[currentResultIndex];
+            currentDocument = result.fileName;
+            const searchTerm = document.getElementById('searchTerm').value.trim();
+            
+            // Update content
+            document.getElementById('documentViewer').innerHTML = 
+                highlightMatches(filesData[currentDocument], searchTerm);
+            
+            // Update UI
+            updateFileList();
+            document.getElementById('resultsCount').textContent = 
+                `Document ${currentResultIndex + 1} of ${searchResults.length}`;
+            
+            // Scroll to first match
+            const firstMatch = document.querySelector('.highlight');
+            if (firstMatch) {
+                firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            const prevButton = document.getElementById('prevDoc');
+            const nextButton = document.getElementById('nextDoc');
+            
+            prevButton.disabled = currentResultIndex === 0 || searchResults.length === 0;
+            nextButton.disabled = currentResultIndex === searchResults.length - 1 || searchResults.length === 0;
+        }
+
+        function navigateWords(direction) {
+            const highlights = document.querySelectorAll('.highlight');
+            if (highlights.length === 0) return;
+
+            if (direction === 'next' && currentWordIndex < highlights.length - 1) {
+                currentWordIndex++;
+            } else if (direction === 'prev' && currentWordIndex > 0) {
+                currentWordIndex--;
+            }
+
+            updateCurrentHighlight();
+
+            highlights[currentWordIndex].scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            updateWordNavigation(highlights.length);
+        }
+
+        function updateWordNavigation(totalMatches) {
+            const prevWordBtn = document.getElementById('prevWord');
+            const nextWordBtn = document.getElementById('nextWord');
+            
+            prevWordBtn.disabled = currentWordIndex === 0;
+            nextWordBtn.disabled = currentWordIndex === totalMatches - 1;
+            
+            // Update results count to include current match
+            if (totalMatches > 0) {
+                document.getElementById('resultsCount').textContent = 
+                    `Match ${currentWordIndex + 1} of ${totalMatches} in document ${currentResultIndex + 1} of ${searchResults.length}`;
+            }
+        }
+
+        function updateCurrentHighlight() {
+            // Remove current class from all highlights
+            document.querySelectorAll('.highlight').forEach(el => {
+                el.classList.remove('current');
+            });
+            
+            // Add current class to the active highlight
+            const highlights = document.querySelectorAll('.highlight');
+            if (highlights.length > 0 && highlights[currentWordIndex]) {
+                highlights[currentWordIndex].classList.add('current');
+            }
+        }
+
+        function clearFiles() {
+            filesData = {};
+            currentDocument = null;
+            searchResults = [];
+            currentResultIndex = 0;
+            currentWordIndex = 0;
+            currentMatches = [];
+            
+            // Reset UI
+            updateFileList();
+            document.getElementById('documentViewer').innerHTML = '';
+            document.getElementById('resultsCount').style.display = 'none';
+            document.getElementById('navigationContainer').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            
+            // Reset buttons
+            document.getElementById('uploadLabel').style.display = 'flex';
+            document.getElementById('addMoreLabel').style.display = 'none';
+            document.getElementById('clearFiles').style.display = 'none';
+            
+            // Reset file inputs
+            document.getElementById('fileInput').value = '';
+            document.getElementById('additionalFiles').value = '';
+            
+            // Disable navigation buttons
+            document.getElementById('prevDoc').disabled = true;
+            document.getElementById('nextDoc').disabled = true;
+            document.getElementById('prevWord').disabled = true;
+            document.getElementById('nextWord').disabled = true;
+        }
+    </script>
+</body>
+</html>
+

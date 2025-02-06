@@ -354,28 +354,207 @@ input[type="file"] {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
     .container {
         grid-template-columns: 1fr;
         height: auto;
         padding: 10px;
+        gap: 10px;
     }
 
     .sidebar {
         height: auto;
-        max-height: 300px;
+        max-height: none;
+        padding: 16px;
+    }
+
+    .sidebar h3 {
+        font-size: 1.5rem;
+        padding-bottom: 12px;
+    }
+
+    .upload-container {
+        flex-direction: column;
+    }
+
+    .upload-label, .clear-button {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
     }
 
     .search-wrapper {
         flex-direction: column;
+        padding: 6px;
     }
 
-    .document-viewer {
-        max-height: 400px;
+    .search-wrapper input {
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+    }
+
+    .search-wrapper button {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .navigation-container {
+        flex-direction: column;
+        gap: 10px;
+        padding: 8px;
+    }
+
+    .word-navigation {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .word-navigation button {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .navigation-buttons {
+        width: 100%;
+        justify-content: space-between;
     }
 
     .navigation-buttons button {
-        width: 40px;
-        height: 40px;
+        width: 48%;
+        height: 36px;
+        border-radius: 18px;
+    }
+
+    .document-viewer {
+        padding: 12px;
+        font-size: 1rem;
+        max-height: 50vh;
+    }
+
+    .results-container {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .results-count {
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    /* Footer mobile styles */
+    .footer {
+        margin-top: 20px;
+        padding: 20px 10px;
+    }
+
+    .footer-content {
+        padding: 0 10px;
+    }
+
+    .linkedin-link {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .linkedin-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .copyright {
+        font-size: 0.8rem;
+    }
+}
+
+/* Additional responsive breakpoint for very small devices */
+@media (max-width: 380px) {
+    .container {
+        padding: 5px;
+    }
+
+    .sidebar h3 {
+        font-size: 1.3rem;
+    }
+
+    .upload-label, .clear-button {
+        font-size: 0.9rem;
+        padding: 10px;
+    }
+
+    .search-wrapper input {
+        font-size: 0.9rem;
+    }
+
+    .word-navigation button {
+        font-size: 0.8rem;
+        height: 38px;
+    }
+}
+
+/* Optimize spacing */
+.sidebar {
+    gap: 15px;
+}
+
+.file-list {
+    gap: 6px;
+}
+
+.file-item {
+    padding: 10px 12px;
+}
+
+.search-container {
+    padding: 10px 0;
+    margin-bottom: 5px;
+}
+
+.results-container {
+    padding: 8px 0;
+    margin-bottom: 5px;
+}
+
+.navigation-container {
+    margin: 5px 0;
+}
+
+/* Add smooth transitions for better UX */
+.container, .sidebar, .main-content {
+    transition: all 0.3s ease;
+}
+
+/* Improve touch targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .file-item {
+        padding: 14px 16px;
+        min-height: 44px;
+    }
+
+    .upload-label, .clear-button {
+        min-height: 44px;
+    }
+
+    .search-wrapper input, 
+    .search-wrapper button {
+        min-height: 44px;
+    }
+}
+
+/* Fix iOS specific issues */
+@supports (-webkit-touch-callout: none) {
+    .document-viewer {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    input, button {
+        -webkit-appearance: none;
+        border-radius: var(--border-radius);
     }
 }
 
